@@ -114,6 +114,8 @@ User sends message → Firestore write → Client calls POST /api/notify with co
 
 The client does **not** send message text or sender id for the notify call; the server reads those from Firestore and checks the sender matches the verified ID token.
 
+Each conversation stores **`unreadCounts`** as a map of user id → integer. Sending a message increments the recipient’s count; opening the chat and marking messages read sets your count to **0**. Conversations created before this feature have no `unreadCounts` until the next message (or you can add `{ uidA: 0, uidB: 0 }` in the Firebase console for old docs).
+
 ### Deploy to Vercel
 
 1. **Get a Firebase service account key:**
@@ -152,7 +154,7 @@ The client does **not** send message text or sender id for the notify call; the 
 
 ### Open chat from a notification (deep link)
 
-FCM `data` includes `conversationId` (and `type: "chat"`). Tapping a notification calls `go('/chat/<conversationId>')` when you are signed in. If the app was opened from a cold start on the login screen, the conversation is opened automatically after you sign in.
+FCM `data` includes `conversationId` (and `type: "chat"`). Tapping a notification uses `?fromNotification=1` so the chat scrolls to the **oldest unread** message once. Opening a chat from the home list goes straight to the latest messages.
 
 ### Alternative: Firebase Cloud Functions (Blaze plan)
 

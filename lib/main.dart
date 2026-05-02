@@ -70,7 +70,9 @@ class _ChatAppState extends ConsumerState<ChatApp> with WidgetsBindingObserver {
   void _openChatFromNotification(String conversationId) {
     final user = ref.read(currentUserProvider);
     if (user != null) {
-      ref.read(routerProvider).go('/chat/$conversationId');
+      ref.read(routerProvider).go(
+            '/chat/$conversationId?fromNotification=1',
+          );
       return;
     }
     ref.read(pendingChatConversationIdProvider.notifier).setPending(conversationId);
@@ -82,7 +84,7 @@ class _ChatAppState extends ConsumerState<ChatApp> with WidgetsBindingObserver {
     final user = ref.read(currentUserProvider);
     if (user == null) return;
     ref.read(pendingChatConversationIdProvider.notifier).clear();
-    ref.read(routerProvider).go('/chat/$pending');
+    ref.read(routerProvider).go('/chat/$pending?fromNotification=1');
   }
 
   Future<void> _handleInitialNotification() async {

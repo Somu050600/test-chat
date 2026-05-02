@@ -128,25 +128,44 @@ module.exports = async function handler(req, res) {
       ? senderUserDoc.data().name
       : "Someone";
 
+    const unreadCounts = convoData.unreadCounts || {};
+    const stacked =
+      typeof unreadCounts[recipientId] === "number"
+        ? unreadCounts[recipientId]
+        : 1;
+    const bodyText =
+      stacked > 1
+        ? `${stacked} new messages`
+        : text.length > 100
+          ? text.substring(0, 100) + "..."
+          : text;
+
     const tokens = tokensSnapshot.docs.map((doc) => doc.data().token);
     const messaging = getMessaging();
 
-    const payload = {
-      notification: {
-        title: senderName,
-        body: text.length > 100 ? text.substring(0, 100) + "..." : text,
-      },
-      data: {
-        conversationId,
-        messageId,
-        senderId,
-        type: "chat",
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-      },
-    };
-
     const results = await Promise.allSettled(
-      tokens.map((token) => messaging.send({ ...payload, token }))
+      tokens.map((token) =>
+        messaging.send({
+          token,
+          notification: {
+            title: senderName,
+            body: bodyText,
+          },
+          data: {
+            conversationId,
+            messageId,
+            senderId,
+            type: "chat",
+            unreadCount: String(stacked),
+            click_action: "FLUTTER_NOTIFICATION_CLICK",
+          },
+          android: {
+            notification: {
+              tag: conversationId,
+            },
+          },
+        })
+      )
     );
 
     const invalidIndices = results

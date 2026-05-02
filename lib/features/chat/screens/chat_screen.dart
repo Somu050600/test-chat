@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/services/native_notification_service.dart';
 import '../../../models/message_model.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/chat_provider.dart';
@@ -11,7 +13,14 @@ import '../widgets/message_input.dart';
 class ChatScreen extends ConsumerStatefulWidget {
   final String conversationId;
 
-  const ChatScreen({super.key, required this.conversationId});
+  /// After opening from a notification, scroll to the oldest unread bubble once.
+  final bool scrollToOldestUnread;
+
+  const ChatScreen({
+    super.key,
+    required this.conversationId,
+    this.scrollToOldestUnread = false,
+  });
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -19,15 +28,36 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey _oldestUnreadAnchorKey = GlobalKey();
+
   bool _markedAsRead = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
+  bool _didUnreadAnchorScroll = false;
   final List<MessageModel> _olderMessages = [];
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    NativeNotificationService.cancelConversationNotifications(
+      widget.conversationId,
+    );
+  }
+
+  @override
+  void didUpdateWidget(ChatScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.conversationId != widget.conversationId) {
+      _olderMessages.clear();
+      _hasMore = true;
+      _didUnreadAnchorScroll = false;
+      _markedAsRead = false;
+    }
+    if (oldWidget.scrollToOldestUnread != widget.scrollToOldestUnread &&
+        widget.scrollToOldestUnread) {
+      _didUnreadAnchorScroll = false;
+    }
   }
 
   @override
@@ -102,6 +132,37 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  void _scrollToOldestUnreadAnchor() {
+    final ctx = _oldestUnreadAnchorKey.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+        alignment: 0.85,
+      );
+    }
+    if (mounted) {
+      setState(() => _didUnreadAnchorScroll = true);
+    }
+  }
+
+  /// In reverse ListView, index 0 = newest. Oldest unread = last index in list
+  /// where message is from other and not read.
+  int? _findOldestUnreadIndex(
+    List<MessageModel> allMessages,
+    String? uid,
+  ) {
+    if (uid == null) return null;
+    for (var i = allMessages.length - 1; i >= 0; i--) {
+      final m = allMessages[i];
+      if (m.senderId != uid && m.status != MessageStatus.read) {
+        return i;
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final messagesAsync = ref.watch(messagesProvider(widget.conversationId));
@@ -128,6 +189,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ),
                   );
                 }
+
                 final hasUnread = recentMessages.any(
                   (m) =>
                       m.senderId != currentUser?.uid &&
@@ -135,14 +197,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 );
                 if (hasUnread) {
                   _markedAsRead = false;
-                  WidgetsBinding.instance
+                  SchedulerBinding.instance
                       .addPostFrameCallback((_) => _markAsRead());
                 } else if (!_markedAsRead) {
-                  WidgetsBinding.instance
+                  SchedulerBinding.instance
                       .addPostFrameCallback((_) => _markAsRead());
                 }
-                WidgetsBinding.instance
-                    .addPostFrameCallback((_) => _scrollToBottom());
+
+                final oldestUnreadIdx =
+                    _findOldestUnreadIndex(allMessages, currentUser?.uid);
+                final shouldAnchorUnread = widget.scrollToOldestUnread &&
+                    oldestUnreadIdx != null &&
+                    !_didUnreadAnchorScroll;
+
+                if (shouldAnchorUnread) {
+                  SchedulerBinding.instance
+                      .addPostFrameCallback((_) => _scrollToOldestUnreadAnchor());
+                } else if (!widget.scrollToOldestUnread || oldestUnreadIdx == null) {
+                  SchedulerBinding.instance
+                      .addPostFrameCallback((_) => _scrollToBottom());
+                }
+
                 return ListView.builder(
                   controller: _scrollController,
                   reverse: true,
@@ -165,10 +240,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     }
                     final message = allMessages[index];
                     final isMe = message.senderId == currentUser?.uid;
-                    return MessageBubble(
+                    final useAnchor = shouldAnchorUnread &&
+                        index == oldestUnreadIdx;
+                    Widget bubble = MessageBubble(
                       message: message,
                       isMe: isMe,
                     );
+                    if (useAnchor) {
+                      bubble = KeyedSubtree(
+                        key: _oldestUnreadAnchorKey,
+                        child: bubble,
+                      );
+                    }
+                    return bubble;
                   },
                 );
               },

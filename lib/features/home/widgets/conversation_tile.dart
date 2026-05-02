@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/date_formatter.dart';
 import '../../../models/conversation_model.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/chat_provider.dart';
 
 class ConversationTile extends ConsumerWidget {
@@ -21,6 +22,8 @@ class ConversationTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(userProvider(otherUserId));
     final theme = Theme.of(context);
+    final uid = ref.watch(currentUserProvider)?.uid;
+    final unread = uid != null ? conversation.unreadFor(uid) : 0;
 
     return userAsync.when(
       data: (user) {
@@ -52,9 +55,31 @@ class ConversationTile extends ConsumerWidget {
                   ),
                 )
               : null,
-          trailing: Text(
-            DateFormatter.relative(conversation.updatedAt),
-            style: theme.textTheme.bodySmall,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (unread > 0) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    unread > 99 ? '99+' : '$unread',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                DateFormatter.relative(conversation.updatedAt),
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
           ),
           onTap: onTap,
         );

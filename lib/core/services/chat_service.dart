@@ -69,27 +69,37 @@ class ChatService {
     required String text,
   }) async {
     final now = DateTime.now();
+    final convoRef = _firestore.collection('conversations').doc(conversationId);
 
-    final batch = _firestore.batch();
+    return _firestore.runTransaction<String>((transaction) async {
+      final convoSnap = await transaction.get(convoRef);
+      if (!convoSnap.exists) {
+        throw StateError('Conversation not found');
+      }
+      final members = List<String>.from(convoSnap.data()?['members'] ?? []);
+      final others = members.where((m) => m != senderId).toList();
+      if (others.isEmpty) {
+        throw StateError('Recipient not found');
+      }
+      final recipientId = others.first;
 
-    final msgRef = _messagesRef(conversationId).doc();
-    batch.set(msgRef, {
-      'senderId': senderId,
-      'text': text,
-      'createdAt': FieldValue.serverTimestamp(),
-      'clientTimestamp': Timestamp.fromDate(now),
-      'status': MessageStatus.sent.name,
+      final msgRef = _messagesRef(conversationId).doc();
+      transaction.set(msgRef, {
+        'senderId': senderId,
+        'text': text,
+        'createdAt': FieldValue.serverTimestamp(),
+        'clientTimestamp': Timestamp.fromDate(now),
+        'status': MessageStatus.sent.name,
+      });
+
+      transaction.update(convoRef, {
+        'lastMessage': text,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'unreadCounts.$recipientId': FieldValue.increment(1),
+      });
+
+      return msgRef.id;
     });
-
-    final convoRef =
-        _firestore.collection('conversations').doc(conversationId);
-    batch.update(convoRef, {
-      'lastMessage': text,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
-    return msgRef.id;
   }
 
   Future<String> getOrCreateConversation(
@@ -114,6 +124,10 @@ class ChatService {
       'membersMap': membersMap,
       'lastMessage': '',
       'updatedAt': FieldValue.serverTimestamp(),
+      'unreadCounts': {
+        currentUserId: 0,
+        otherUserId: 0,
+      },
     });
 
     return newConvo.id;
@@ -167,11 +181,14 @@ class ChatService {
         .get();
 
     final batch = _firestore.batch();
+    final convoRef = _firestore.collection('conversations').doc(conversationId);
+
     for (final doc in [...sent.docs, ...delivered.docs]) {
       if (doc.data()['senderId'] != currentUserId) {
         batch.update(doc.reference, {'status': 'read'});
       }
     }
+    batch.update(convoRef, {'unreadCounts.$currentUserId': 0});
     await batch.commit();
   }
 }

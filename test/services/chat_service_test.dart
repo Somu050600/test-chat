@@ -22,6 +22,7 @@ void main() {
       expect(doc.exists, isTrue);
       expect(doc.data()!['members'], ['uid1', 'uid2']);
       expect(doc.data()!['membersMap'], {'uid1': true, 'uid2': true});
+      expect(doc.data()!['unreadCounts'], {'uid1': 0, 'uid2': 0});
     });
 
     test('getOrCreateConversation returns existing conversation', () async {
@@ -140,6 +141,12 @@ void main() {
       for (final doc in msgs.docs) {
         expect(doc.data()['status'], 'read');
       }
+
+      final convoDoc = await fakeFirestore
+          .collection('conversations')
+          .doc(convoId)
+          .get();
+      expect(convoDoc.data()!['unreadCounts']['uid2'], 0);
     });
   });
 }

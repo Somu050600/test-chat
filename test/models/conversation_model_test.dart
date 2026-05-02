@@ -41,6 +41,7 @@ void main() {
         membersMap: {'uid1': true, 'uid2': true},
         lastMessage: 'Hi',
         updatedAt: DateTime(2024, 1, 1),
+        unreadCounts: {'uid1': 0, 'uid2': 3},
       );
 
       final map = convo.toMap();
@@ -48,6 +49,21 @@ void main() {
       expect(map['members'], ['uid1', 'uid2']);
       expect(map['membersMap'], {'uid1': true, 'uid2': true});
       expect(map['lastMessage'], 'Hi');
+      expect(map['unreadCounts'], {'uid1': 0, 'uid2': 3});
+    });
+
+    test('unreadFor returns count for uid', () {
+      final convo = ConversationModel(
+        id: 'id',
+        members: ['uid1', 'uid2'],
+        membersMap: {'uid1': true, 'uid2': true},
+        lastMessage: '',
+        updatedAt: DateTime.now(),
+        unreadCounts: {'uid1': 0, 'uid2': 5},
+      );
+      expect(convo.unreadFor('uid2'), 5);
+      expect(convo.unreadFor('uid1'), 0);
+      expect(convo.unreadFor('unknown'), 0);
     });
 
     test('otherMember returns the other uid', () {

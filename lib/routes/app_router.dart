@@ -30,13 +30,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/',
         builder: (context, state) => const HomeScreen(),
         routes: [
-          GoRoute(
-            path: 'chat/:conversationId',
-            builder: (context, state) {
-              final conversationId = state.pathParameters['conversationId']!;
-              return ChatScreen(conversationId: conversationId);
-            },
-          ),
+              GoRoute(
+                path: 'chat/:conversationId',
+                builder: (context, state) {
+                  final conversationId = state.pathParameters['conversationId']!;
+                  final scrollUnread =
+                      state.uri.queryParameters['fromNotification'] == '1';
+                  return ChatScreen(
+                    conversationId: conversationId,
+                    scrollToOldestUnread: scrollUnread,
+                  );
+                },
+              ),
           GoRoute(
             path: 'new-chat',
             builder: (context, state) => const NewChatScreen(),

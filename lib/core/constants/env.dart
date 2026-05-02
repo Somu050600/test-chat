@@ -29,6 +29,4 @@ class Env {
 
   static const notifyApiUrl =
       String.fromEnvironment('NOTIFY_API_URL');
-  static const notifyApiKey =
-      String.fromEnvironment('NOTIFY_API_KEY');
 }

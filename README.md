@@ -109,8 +109,10 @@ Push notifications are sent via a lightweight Vercel serverless function at `bac
 ### How it works
 
 ```
-User sends message → Firestore write → Client calls POST /api/notify → Backend sends FCM → Recipient gets push
+User sends message → Firestore write → Client calls POST /api/notify with conversationId + messageId and Firebase ID token → Backend verifies token, loads message from Firestore, sends FCM → Recipient gets push
 ```
+
+The client does **not** send message text or sender id for the notify call; the server reads those from Firestore and checks the sender matches the verified ID token.
 
 ### Deploy to Vercel
 
@@ -132,16 +134,15 @@ User sends message → Firestore write → Client calls POST /api/notify → Bac
    Follow the prompts (link to your Vercel account, pick a project name).
 
 4. **Set environment variables in Vercel dashboard:**
-   - `FIREBASE_SERVICE_ACCOUNT` — paste the entire service account JSON as a single line
-   - `API_SECRET_KEY` — generate a random string (e.g., `openssl rand -hex 32`)
+   - `FIREBASE_SERVICE_ACCOUNT` — paste the entire service account JSON as a single line (used for Admin SDK: verify ID tokens, Firestore, FCM)
 
 5. **Note your deployment URL** (e.g., `https://chat-app-notifications.vercel.app`)
 
 6. **Update your Flutter `.env`:**
    ```
    NOTIFY_API_URL=https://your-project.vercel.app/api/notify
-   NOTIFY_API_KEY=<same API_SECRET_KEY from step 4>
    ```
+   `NOTIFY_API_KEY` is no longer required; auth uses `Authorization: Bearer <Firebase ID token>`.
 
 7. **Rebuild and deploy the Flutter app:**
    ```bash

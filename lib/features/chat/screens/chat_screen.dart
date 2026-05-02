@@ -180,15 +180,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           MessageInput(
             onSend: (text) async {
               if (currentUser == null) return;
-              await ref.read(chatServiceProvider).sendMessage(
+              final messageId = await ref.read(chatServiceProvider).sendMessage(
                     conversationId: widget.conversationId,
                     senderId: currentUser.uid,
                     text: text,
                   );
               ref.read(pushNotificationApiProvider).sendNotification(
                     conversationId: widget.conversationId,
-                    senderId: currentUser.uid,
-                    text: text,
+                    messageId: messageId,
                   );
             },
           ),

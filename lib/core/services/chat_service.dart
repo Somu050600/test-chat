@@ -62,7 +62,8 @@ class ChatService {
     return doc.exists ? doc : null;
   }
 
-  Future<void> sendMessage({
+  /// Returns the new message document id (for server-verified notify).
+  Future<String> sendMessage({
     required String conversationId,
     required String senderId,
     required String text,
@@ -88,6 +89,7 @@ class ChatService {
     });
 
     await batch.commit();
+    return msgRef.id;
   }
 
   Future<String> getOrCreateConversation(

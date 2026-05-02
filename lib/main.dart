@@ -1,11 +1,14 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'core/constants/app_constants.dart';
+import 'core/utils/notification_payload.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
+import 'providers/pending_chat_navigation_provider.dart';
+import 'providers/notification_provider.dart';
 import 'routes/app_router.dart';
 
 @pragma('vm:entry-point')
@@ -28,17 +31,67 @@ class ChatApp extends ConsumerStatefulWidget {
 }
 
 class _ChatAppState extends ConsumerState<ChatApp> with WidgetsBindingObserver {
+  late final ProviderSubscription<String?> _pendingChatSubscription;
+  late final ProviderSubscription<User?> _authSubscription;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _setOnline();
+
+    final notificationService = ref.read(notificationServiceProvider);
+    notificationService.setupBackgroundTapHandler((RemoteMessage message) {
+      final conversationId = conversationIdFromRemoteMessage(message);
+      if (conversationId == null) return;
+      _openChatFromNotification(conversationId);
+    });
+
+    _pendingChatSubscription = ref.listenManual<String?>(
+      pendingChatConversationIdProvider,
+      (_, _) => _tryOpenPendingChat(),
+    );
+    _authSubscription = ref.listenManual<User?>(
+      currentUserProvider,
+      (_, _) => _tryOpenPendingChat(),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _handleInitialNotification());
   }
 
   @override
   void dispose() {
+    _pendingChatSubscription.close();
+    _authSubscription.close();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _openChatFromNotification(String conversationId) {
+    final user = ref.read(currentUserProvider);
+    if (user != null) {
+      ref.read(routerProvider).go('/chat/$conversationId');
+      return;
+    }
+    ref.read(pendingChatConversationIdProvider.notifier).setPending(conversationId);
+  }
+
+  void _tryOpenPendingChat() {
+    final pending = ref.read(pendingChatConversationIdProvider);
+    if (pending == null || pending.isEmpty) return;
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+    ref.read(pendingChatConversationIdProvider.notifier).clear();
+    ref.read(routerProvider).go('/chat/$pending');
+  }
+
+  Future<void> _handleInitialNotification() async {
+    final message =
+        await ref.read(notificationServiceProvider).getInitialMessage();
+    final conversationId = conversationIdFromRemoteMessage(message);
+    if (conversationId == null) return;
+    ref.read(pendingChatConversationIdProvider.notifier).setPending(conversationId);
+    _tryOpenPendingChat();
   }
 
   @override

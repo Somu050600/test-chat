@@ -150,6 +150,10 @@ The client does **not** send message text or sender id for the notify call; the 
    firebase deploy --only hosting
    ```
 
+### Open chat from a notification (deep link)
+
+FCM `data` includes `conversationId` (and `type: "chat"`). Tapping a notification calls `go('/chat/<conversationId>')` when you are signed in. If the app was opened from a cold start on the login screen, the conversation is opened automatically after you sign in.
+
 ### Alternative: Firebase Cloud Functions (Blaze plan)
 
 `functions/index.js` contains a Firestore trigger version that auto-fires on new messages. This requires the Blaze (pay-as-you-go) plan. If you upgrade later, deploy with:

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,17 +17,32 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  late final ProviderSubscription<User?> _authForNotifications;
+
   @override
   void initState() {
     super.initState();
-    _initNotifications();
+    final initialUser = ref.read(currentUserProvider);
+    if (initialUser != null) {
+      _initNotifications(initialUser.uid);
+    }
+
+    _authForNotifications = ref.listenManual<User?>(
+      currentUserProvider,
+      (previous, next) {
+        if (next != null) _initNotifications(next.uid);
+      },
+    );
   }
 
-  Future<void> _initNotifications() async {
-    final user = ref.read(currentUserProvider);
-    if (user != null) {
-      await ref.read(notificationServiceProvider).initialize(user.uid);
-    }
+  @override
+  void dispose() {
+    _authForNotifications.close();
+    super.dispose();
+  }
+
+  Future<void> _initNotifications(String userId) async {
+    await ref.read(notificationServiceProvider).initialize(userId);
   }
 
   void _markAllAsDelivered(List<ConversationModel> conversations, String? uid) {

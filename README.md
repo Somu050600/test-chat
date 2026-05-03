@@ -9,6 +9,7 @@ A multi-platform real-time chat application built with Flutter and Firebase.
 - **Push notifications** — FCM-based notifications with foreground + background handling
 - **Clean architecture** — feature-based folder structure, Riverpod state management
 - **Cross-platform** — Android, iOS, Web
+- **Settings** — profile (name + photo via Storage), local app title, Android launcher variants, logout
 
 ## Tech Stack
 
@@ -17,6 +18,7 @@ A multi-platform real-time chat application built with Flutter and Firebase.
 | Framework | Flutter 3.x |
 | Auth | Firebase Auth + Google Sign-In |
 | Database | Cloud Firestore |
+| Storage | Firebase Storage (profile photos) |
 | Notifications | Firebase Cloud Messaging |
 | State Management | Riverpod |
 | Routing | go_router |
@@ -33,7 +35,8 @@ lib/
 ├── features/
 │   ├── auth/         # Login screen
 │   ├── chat/         # Chat screen, message bubbles, input
-│   └── home/         # Conversation list, new chat
+│   ├── home/         # Conversation list, new chat
+│   └── settings/     # Profile, app appearance, logout
 ├── models/           # Data models (User, Conversation, Message)
 ├── providers/        # Riverpod providers
 ├── routes/           # GoRouter configuration
@@ -70,9 +73,10 @@ All Firebase keys and secrets are loaded from a `.env` file via `--dart-define-f
 1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
 2. Enable Google Sign-In in Authentication
 3. Create a Firestore database
-4. Deploy Firestore rules: `firebase deploy --only firestore:rules`
-5. Deploy indexes: `firebase deploy --only firestore:indexes`
-6. Deploy Cloud Functions: `cd functions && npm install && firebase deploy --only functions`
+4. Create a default Storage bucket and deploy rules: `firebase deploy --only storage`
+5. Deploy Firestore rules: `firebase deploy --only firestore:rules`
+6. Deploy indexes: `firebase deploy --only firestore:indexes`
+7. Deploy Cloud Functions: `cd functions && npm install && firebase deploy --only functions`
 
 ### Run
 

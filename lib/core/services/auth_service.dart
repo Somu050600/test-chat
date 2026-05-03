@@ -97,4 +97,20 @@ class AuthService {
     if (!kIsWeb) await _googleSignIn?.signOut();
     await _auth.signOut();
   }
+
+  Future<void> updateProfile({
+    required String name,
+    String? photoUrl,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await user.updateDisplayName(name);
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      await user.updatePhotoURL(photoUrl);
+    }
+    await _firestore.collection('users').doc(user.uid).update({
+      'name': name,
+      if (photoUrl != null && photoUrl.isNotEmpty) 'photoUrl': photoUrl,
+    });
+  }
 }

@@ -34,3 +34,10 @@ final allUsersProvider = StreamProvider<List<UserModel>>((ref) {
   if (user == null) return Stream.value([]);
   return ref.watch(chatServiceProvider).searchUsers(user.uid);
 });
+
+/// Signed-in user's Firestore profile (live).
+final currentUserProfileProvider = StreamProvider<UserModel?>((ref) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return Stream.value(null);
+  return ref.watch(chatServiceProvider).userStream(user.uid);
+});

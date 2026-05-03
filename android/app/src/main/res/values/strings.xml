@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="launcher_name_default">Chat App</string>
+    <string name="launcher_name_notes">Notes</string>
+    <string name="launcher_name_work">Work</string>
+    <string name="launcher_name_private">Private</string>
+</resources>

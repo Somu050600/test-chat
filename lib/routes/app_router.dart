@@ -6,6 +6,7 @@ import '../features/auth/screens/login_screen.dart';
 import '../features/chat/screens/chat_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/home/screens/new_chat_screen.dart';
+import '../features/settings/screens/settings_screen.dart';
 import '../providers/auth_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -45,6 +46,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'new-chat',
             builder: (context, state) => const NewChatScreen(),
+          ),
+          GoRoute(
+            path: 'settings',
+            builder: (context, state) => const SettingsScreen(),
           ),
         ],
       ),

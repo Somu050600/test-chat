@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../models/conversation_model.dart';
+import '../../../providers/app_settings_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/chat_provider.dart';
 import '../../../providers/notification_provider.dart';
@@ -57,21 +58,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final conversations = ref.watch(conversationsProvider);
     final user = ref.watch(currentUserProvider);
+    final appTitle = ref.watch(appSettingsProvider).value?.displayAppName;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chats'),
+        title: Text(appTitle ?? 'Chats'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              if (user != null) {
-                await ref
-                    .read(notificationServiceProvider)
-                    .deleteToken(user.uid);
-              }
-              await ref.read(authServiceProvider).signOut();
-            },
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () => context.go('/settings'),
           ),
         ],
       ),

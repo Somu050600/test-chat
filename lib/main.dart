@@ -4,6 +4,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_constants.dart';
+import 'core/services/launcher_platform_service.dart';
+import 'providers/app_settings_provider.dart';
 import 'core/utils/notification_payload.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
@@ -57,6 +59,16 @@ class _ChatAppState extends ConsumerState<ChatApp> with WidgetsBindingObserver {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _handleInitialNotification());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncAndroidLauncher());
+  }
+
+  Future<void> _syncAndroidLauncher() async {
+    try {
+      final settings = await ref.read(appSettingsProvider.future);
+      await LauncherPlatformService.applyLauncherAlias(
+        settings.launcherAliasId,
+      );
+    } catch (_) {}
   }
 
   @override
@@ -121,9 +133,11 @@ class _ChatAppState extends ConsumerState<ChatApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
+    final title = ref.watch(appSettingsProvider).value?.displayAppName ??
+        AppConstants.appName;
 
     return MaterialApp.router(
-      title: AppConstants.appName,
+      title: title,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(

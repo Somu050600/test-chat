@@ -42,7 +42,7 @@
             android:name=".LauncherNotes"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_notes"
+            android:icon="@mipmap/ic_launcher"
             android:label="@string/launcher_name_notes"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -55,7 +55,7 @@
             android:name=".LauncherWork"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_work"
+            android:icon="@mipmap/ic_launcher"
             android:label="@string/launcher_name_work"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -68,7 +68,7 @@
             android:name=".LauncherPrivate"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_private"
+            android:icon="@mipmap/ic_launcher"
             android:label="@string/launcher_name_private"
             android:targetActivity=".MainActivity">
             <intent-filter>
